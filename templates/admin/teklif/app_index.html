@@ -1,0 +1,88 @@
+{% extends "admin/app_index.html" %}
+{% load i18n %}
+{% load teklif_charts %}
+
+{% block content %}
+{% get_teklif_dashboard_data as data %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<div class="row">
+    
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm" style="border:none; border-radius:8px;">
+            <div class="card-header text-white" style="background: linear-gradient(90deg, #6610f2, #6f42c1); padding: 15px;">
+                <h4 class="card-title mb-0"><i class="fas fa-chart-bar"></i> Aylık Teklif Hacmi ve Durum Dağılımı</h4>
+            </div>
+            <div class="card-body" style="background:#fff; padding: 20px;">
+                <div id="chart-stacked" style="width: 100%; height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm" style="border:none; border-radius:8px;">
+            <div class="card-header text-white" style="background: linear-gradient(90deg, #20c997, #28a745); padding: 15px;">
+                <h4 class="card-title mb-0"><i class="fas fa-crown"></i> En Yüksek Teklif Verilen Müşteriler (Top 5)</h4>
+            </div>
+            <div class="card-body" style="background:#fff; padding: 20px;">
+                <div id="chart-horizontal" style="width: 100%; height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{{ block.super }}
+
+<script type="text/javascript">
+    var rawData = {{ data|safe }};
+
+    // --- CHART 1: STACKED BAR (ZAMAN & DURUM) ---
+    var chartStacked = echarts.init(document.getElementById('chart-stacked'));
+    var optionStacked = {
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'shadow' }
+        },
+        legend: { top: '0%' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', data: rawData.months },
+        yAxis: { type: 'value', name: 'Tutar (TL)' },
+        series: rawData.series // Backend'den hazır gelen renkli seriler
+    };
+    chartStacked.setOption(optionStacked);
+
+    // --- CHART 2: HORIZONTAL BAR (TOP MÜŞTERİLER) ---
+    var chartHorizontal = echarts.init(document.getElementById('chart-horizontal'));
+    var optionHorizontal = {
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'value', name: 'Toplam Teklif Tutarı' },
+        yAxis: { 
+            type: 'category', 
+            data: rawData.top_cust_names,
+            inverse: true // En yüksek en üstte olsun
+        },
+        series: [{
+            name: 'Teklif Tutarı',
+            type: 'bar',
+            data: rawData.top_cust_values,
+            label: { show: true, position: 'right', formatter: '{c} ₺' },
+            itemStyle: {
+                color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+                    { offset: 0, color: '#2ecc71' },
+                    { offset: 1, color: '#27ae60' }
+                ]),
+                borderRadius: [0, 5, 5, 0]
+            },
+            barWidth: '50%'
+        }]
+    };
+    chartHorizontal.setOption(optionHorizontal);
+
+    window.addEventListener('resize', function() {
+        chartStacked.resize();
+        chartHorizontal.resize();
+    });
+</script>
+{% endblock %}

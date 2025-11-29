@@ -1,0 +1,168 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <style>
+        /* İmza Kutusu Stilleri */
+        .signature-wrapper {
+            border: 2px dashed #ccc;
+            background-color: #fcfcfc;
+            display: inline-block;
+            border-radius: 8px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 600px;
+        }
+        .signature-img-preview {
+            border: 1px solid #ddd;
+            padding: 10px;
+            max-width: 100%;
+            height: auto;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        canvas {
+            width: 100%;
+            height: 250px;
+            display: block;
+            touch-action: none;
+        }
+        .signature-container-box {
+            margin-top: 30px; 
+            margin-bottom: 20px;
+            clear: both;
+            width: 100%;
+        }
+    </style>
+{% endblock %}
+
+{% block after_field_sets %}
+    <div id="signature-template" style="display:none;">
+        <div class="card card-secondary card-outline signature-container-box">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-file-signature"></i> Müşteri Onay İmzası</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+                </div>
+            </div>
+            <div class="card-body text-center">
+                
+                <div id="existing-signature" style="display:none;">
+                    <p class="text-success font-weight-bold"><i class="fas fa-check-circle"></i> İmzalanmış Belge</p>
+                    <img id="sig-img" src="" class="signature-img-preview">
+                    <br>
+                    <button type="button" class="btn btn-warning btn-sm mt-3" id="btn-renew-sig">
+                        <i class="fas fa-redo"></i> İmzayı Yenile / Değiştir
+                    </button>
+                </div>
+
+                <div id="new-signature" style="display:none;">
+                    <p class="text-muted small">Servis işlemini onaylamak için lütfen aşağıdaki alana imza atınız.</p>
+                    <div class="signature-wrapper">
+                        <canvas id="signature-pad"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-danger btn-sm" id="clear-signature">
+                            <i class="fas fa-eraser"></i> Temizle
+                        </button>
+                        <span id="sig-status" class="text-success ml-2 font-weight-bold" style="display:none;">
+                            <i class="fas fa-pen"></i> İmza Algılandı
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var realInput = document.getElementById('id_musteri_imzasi');
+            if (!realInput) return;
+
+            var template = document.getElementById('signature-template');
+            var container = realInput.closest('.form-row') || realInput.closest('.form-group') || realInput.parentNode;
+            
+            if(container) {
+                container.appendChild(template);
+                template.style.display = 'block';
+                realInput.style.display = 'none';
+                var label = container.querySelector('label[for="id_musteri_imzasi"]');
+                if(label) label.style.display = 'none';
+            }
+
+            var existingDiv = document.getElementById('existing-signature');
+            var newDiv = document.getElementById('new-signature');
+            var canvas = document.getElementById('signature-pad');
+            
+            function resizeCanvas() {
+                var ratio =  Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+            }
+
+            var signaturePad;
+            setTimeout(function(){
+                resizeCanvas();
+                signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgba(255, 255, 255, 0)' });
+                
+                if (realInput.value && realInput.value.trim() !== '') {
+                    document.getElementById('sig-img').src = realInput.value;
+                    existingDiv.style.display = 'block';
+                } else {
+                    newDiv.style.display = 'block';
+                    signaturePad.on();
+                }
+                
+                signaturePad.addEventListener("endStroke", () => {
+                   document.getElementById('sig-status').style.display = 'inline';
+                });
+            }, 500);
+
+            window.addEventListener("resize", resizeCanvas);
+
+            document.getElementById('btn-renew-sig').addEventListener('click', function(e) {
+                e.preventDefault();
+                if(confirm('Mevcut imza silinecek. Onaylıyor musunuz?')) {
+                    existingDiv.style.display = 'none';
+                    newDiv.style.display = 'block';
+                    signaturePad.clear();
+                    realInput.value = '';
+                    resizeCanvas();
+                    signaturePad.on();
+                }
+            });
+
+            document.getElementById('clear-signature').addEventListener('click', function(e) {
+                e.preventDefault();
+                signaturePad.clear();
+                realInput.value = '';
+                document.getElementById('sig-status').style.display = 'none';
+            });
+
+            var form = document.getElementById('serviskaydi_form') || document.querySelector('form');
+            if(form) {
+                form.addEventListener('submit', function(e) {
+                    if (newDiv.style.display !== 'none' && signaturePad && !signaturePad.isEmpty()) {
+                        realInput.value = signaturePad.toDataURL();
+                    }
+                });
+            }
+        });
+    </script>
+    
+    {{ block.super }}
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+    {{ block.super }}
+    <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+        <button type="button" id="btnHelpModal" class="btn btn-info btn-block" style="width: 100%; padding: 10px; font-weight: bold;">
+            <i class="fas fa-info-circle"></i> SERVİS YÖNETİM REHBERİ
+        </button>
+    </div>
+{% endblock %}

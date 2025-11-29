@@ -1,0 +1,142 @@
+<style>
+    .preview-card { border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .preview-header { 
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+        color: white; 
+        padding: 15px 20px; /* Padding biraz azaltıldı */
+        border-radius: 5px 5px 0 0; 
+        position: relative; /* Kapat butonu için referans */
+    }
+    .preview-body { padding: 25px; background: #fff; }
+    .info-label { font-weight: 600; color: #6c757d; font-size: 0.9rem; margin-bottom: 2px; }
+    .info-value { font-size: 1.1rem; font-weight: 500; color: #2d3748; margin-bottom: 15px; }
+    .section-title { font-size: 1.2rem; font-weight: bold; color: #4a5568; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px; margin-top: 30px; }
+    .table-modern thead th { background-color: #f7fafc; color: #4a5568; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; border-bottom: 2px solid #edf2f7; }
+    .internal-note-box { background-color: #fff5f5; border-left: 4px solid #fc8181; padding: 15px; border-radius: 4px; margin-top: 20px; }
+    .badge-status { padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+    .log-item { border-left: 2px solid #cbd5e0; padding-left: 15px; margin-bottom: 10px; position: relative; }
+    .log-item::before { content: ''; position: absolute; left: -6px; top: 5px; width: 10px; height: 10px; background: #cbd5e0; border-radius: 50%; }
+    
+    /* YENİ: Kapat Butonu Stili */
+    .close-preview-btn {
+        background: rgba(255,255,255,0.2);
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        line-height: 1;
+        padding: 0 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 15px;
+        transition: background 0.2s;
+    }
+    .close-preview-btn:hover {
+        background: rgba(255,255,255,0.4);
+        color: #fff;
+        text-decoration: none;
+    }
+</style>
+
+<div class="preview-card">
+    <div class="preview-header d-flex justify-content-between align-items-start">
+        <div style="flex-grow: 1;">
+            <h3 style="margin:0; font-size: 1.5rem;">{{ p.kod }}</h3>
+            <span style="opacity:0.9; font-size: 0.9rem;">{{ p.musteri }}</span>
+        </div>
+        
+        <div class="d-flex align-items-center">
+            <span class="badge badge-light" style="font-size:0.9rem; color:#333; padding: 8px 12px;">
+                <i class="far fa-calendar-alt"></i> {{ p.tarih|date:"d M Y" }}
+            </span>
+            
+            <button type="button" class="close-preview-btn" data-dismiss="modal" aria-label="Kapat" title="Kapat">
+                &times;
+            </button>
+        </div>
+    </div>
+
+    <div class="preview-body">
+        
+        <div class="row">
+            <div class="col-md-4">
+                <div class="info-label">Durum</div>
+                <div class="info-value">
+                    <span class="badge-status" style="background:#eee; color:#333;">{{ p.get_durum_display }}</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="info-label">Son Geçerlilik</div>
+                <div class="info-value">{{ p.gecerlilik_tarihi|date:"d.m.Y"|default:"-" }}</div>
+            </div>
+            <div class="col-md-4 text-right">
+                <div class="info-label">Genel Toplam</div>
+                <div class="info-value" style="color:#2d3748; font-size:1.5rem;">{{ genel_toplam|floatformat:2 }} {{ sembol }}</div>
+            </div>
+        </div>
+
+        <h5 class="section-title"><i class="fas fa-box-open"></i> Teklif Kalemleri</h5>
+        <div class="table-responsive">
+            <table class="table table-modern table-hover">
+                <thead>
+                    <tr>
+                        <th>Ürün / Hizmet</th>
+                        <th class="text-center">Miktar</th>
+                        <th class="text-right">Birim Fiyat</th>
+                        <th class="text-right">Tutar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in kalemler %}
+                    <tr>
+                        <td>
+                            <strong>{{ item.urun }}</strong>
+                            {% if item.aciklama %}<br><small class="text-muted">{{ item.aciklama }}</small>{% endif %}
+                        </td>
+                        <td class="text-center">{{ item.miktar }}</td>
+                        <td class="text-right">{{ item.fiyat|floatformat:2 }} {{ item.kur }}</td>
+                        <td class="text-right font-weight-bold">{{ item.toplam|floatformat:2 }} {{ item.kur }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row">
+            {% if p.notlar %}
+            <div class="col-md-12">
+                <h5 class="section-title"><i class="fas fa-sticky-note"></i> Notlar & Şartlar</h5>
+                <div style="background:#f8f9fa; padding:15px; border-radius:5px; font-size:0.9rem;">
+                    {{ p.notlar|safe }}
+                    {% if sartlar %}
+                    <ul style="margin-top:10px; padding-left:20px;">
+                        {% for s in sartlar %}<li>{{ s }}</li>{% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if p.firma_ici_not %}
+            <div class="col-md-12">
+                <div class="internal-note-box">
+                    <strong style="color:#c53030;"><i class="fas fa-user-secret"></i> FİRMA İÇİ NOT (GİZLİ):</strong>
+                    <p style="margin-top:5px; margin-bottom:0; color:#2d3748;">{{ p.firma_ici_not|linebreaksbr }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if logs %}
+        <h5 class="section-title"><i class="fas fa-history"></i> Mail Gönderim Geçmişi</h5>
+        <div style="max-height:150px; overflow-y:auto;">
+            {% for log in logs %}
+            <div class="log-item">
+                <strong>{{ log.gonderilen_adres }}</strong> adresine gönderildi.
+                <br><small class="text-muted">{{ log.gonderim_zamani|date:"d F Y H:i" }}</small>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    </div>
+</div>

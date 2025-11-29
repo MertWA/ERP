@@ -1,0 +1,149 @@
+{% extends "admin/app_index.html" %}
+{% load i18n %}
+{% load stok_charts %}
+
+{% block content %}
+{% get_stok_dashboard_data as dashboard_data %}
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<style>
+    /* Kapsayıcı Kart Stili */
+    .chart-container {
+        background: #fff;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-radius: 8px; /* Köşeleri biraz daha yumuşattık */
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border: 1px solid #e0e0e0;
+        
+        /* Taşmayı Engelleme (Kritik Nokta) */
+        max-width: 100%; 
+        overflow: hidden; /* Dışarı taşan her şeyi kes */
+    }
+
+    /* Başlık ve Açıklama */
+    .chart-header h2 {
+        color: #c0392b; 
+        margin-bottom: 5px; 
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    .chart-header p {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+
+    /* Grafik Kaydırma Alanı (Scroll Wrapper) */
+    .chart-scroll-wrapper {
+        width: 100%;
+        overflow-x: auto; /* Yatayda sığmazsa scroll çıkar */
+        -webkit-overflow-scrolling: touch; /* Mobilde akıcı kaydırma */
+        padding-bottom: 10px; /* Scroll çubuğu grafiği kesmesin diye boşluk */
+    }
+
+    /* Grafik Kutusu */
+    .chart-box {
+        width: 100%;
+        height: 400px;
+        /* Minimum genişlik vererek grafiğin sıkışmasını engelliyoruz.
+           Mobilde scroll bar çıkmasını sağlayan şey budur. */
+        min-width: 600px; 
+    }
+    
+    /* Stok Dağılımı başlığı için renk */
+    .blue-header h2 { color: #2980b9 !important; }
+</style>
+
+<div class="row">
+    
+    <div class="col-12">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h2>🚨 Kritik Stok Uyarıları</h2>
+                <p>Aşağıdaki ürünlerin stokları kritik seviyenin altındadır.</p>
+            </div>
+            
+            <div class="chart-scroll-wrapper">
+                <div id="chart-critical" class="chart-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="chart-container blue-header">
+            <div class="chart-header">
+                <h2>📦 Depo Stok Dağılımı (Kategori Bazlı)</h2>
+                <p>Kategorilerin ve ürünlerin stoktaki hacimsel dağılımı.</p>
+            </div>
+
+            <div class="chart-scroll-wrapper">
+                <div id="chart-treemap" class="chart-box" style="height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{{ block.super }}
+
+<script type="text/javascript">
+    var rawData = {{ dashboard_data|safe }};
+
+    // --- CHART 1: KRİTİK STOK ---
+    var chartCritical = echarts.init(document.getElementById('chart-critical'));
+    var optionCritical = {
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'value', name: 'Adet' },
+        yAxis: { type: 'category', data: rawData.kritik.names },
+        series: [
+            {
+                name: 'Mevcut Stok', type: 'bar', data: rawData.kritik.values,
+                itemStyle: { color: '#e74c3c' }, label: { show: true, position: 'right' }
+            },
+            {
+                name: 'Kritik Sınır', type: 'bar', data: rawData.kritik.limits,
+                itemStyle: { color: '#95a5a6' }, barGap: '-100%', opacity: 0.3
+            }
+        ]
+    };
+    chartCritical.setOption(optionCritical);
+
+    // --- CHART 2: TREEMAP ---
+    var chartTreemap = echarts.init(document.getElementById('chart-treemap'));
+    var optionTreemap = {
+        tooltip: {
+            formatter: function (info) {
+                var value = info.value;
+                var treePathInfo = info.treePathInfo;
+                var treePath = [];
+                for (var i = 1; i < treePathInfo.length; i++) {
+                    treePath.push(treePathInfo[i].name);
+                }
+                return ['<div class="tooltip-title">' + echarts.format.encodeHTML(treePath.join('/')) + '</div>',
+                        'Stok: ' + echarts.format.addCommas(value)].join('');
+            }
+        },
+        series: [{
+            name: 'Depo', type: 'treemap', visibleMin: 300,
+            label: { show: true, formatter: '{b}' },
+            itemStyle: { borderColor: '#fff' },
+            levels: [
+                { itemStyle: { borderColor: '#777', borderWidth: 0, gapWidth: 1 }, upperLabel: { show: false } },
+                { itemStyle: { borderColor: '#555', borderWidth: 5, gapWidth: 1 }, emphasis: { itemStyle: { borderColor: '#ddd' } } },
+                { colorSaturation: [0.35, 0.5], itemStyle: { borderWidth: 5, gapWidth: 1, borderColorSaturation: 0.6 } }
+            ],
+            data: rawData.treemap
+        }]
+    };
+    chartTreemap.setOption(optionTreemap);
+
+    // Ekran boyutu değişince grafikleri yeniden boyutlandır
+    window.addEventListener('resize', function() {
+        chartCritical.resize();
+        chartTreemap.resize();
+    });
+</script>
+{% endblock %}

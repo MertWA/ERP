@@ -1,0 +1,129 @@
+/* Select2 Dropdown Renk Düzeltmesi */
+
+/* 1. Üzerine gelinen (Hover) veya Seçili öğe */
+.select2-container--default .select2-results__option--highlighted[aria-selected], 
+.select2-container--admin-autocomplete .select2-results__option--highlighted[aria-selected] {
+    background-color: #ffc107 !important; /* Jazzmin Moru */
+    color: #000000 !important;            /* BEYAZ YAZI (Sorunu çözen kısım) */
+}
+
+/* 2. Normal Durum (Okunabilirliği artırmak için) */
+.select2-results__option {
+    color: #333333;
+    padding: 8px 10px;
+}
+
+/* 3. Seçim Kutusu Kenarlıkları (Daha modern görünüm) */
+.select2-container--default .select2-selection--single {
+    border: 1px solid #ced4da !important;
+    height: calc(2.25rem + 2px) !important;
+    padding: 0.375rem 0.75rem;
+}
+
+/* 4. Dikey hizalama düzeltmesi */
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 1.5 !important;
+    padding-left: 0 !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: calc(2.25rem + 2px) !important;
+}
+/* Öğretici Kutusu Hover Efekti */
+.help-header:hover {
+    background-color: #e9ecef !important;
+}
+
+/* --- MODAL & BACKDROP DÜZELTMESİ --- */
+
+/* Modalın kendisi tüm ekranı kaplasın ve arka planı yarı saydam siyah olsun */
+.modal {
+    background-color: rgba(0, 0, 0, 0.6) !important; /* %60 Siyah Perde */
+    overflow-y: auto; /* Dikeyde sığmazsa scroll olsun */
+}
+
+/* Modal içeriği ortalansın ve öne çıksın */
+.modal-dialog {
+    margin-top: 5vh !important; /* Üstten biraz boşluk */
+    z-index: 1050; /* En önde dur */
+}
+
+/* Kapat butonları için cursor */
+.close, .close-preview-btn {
+    cursor: pointer;
+}
+
+/* Önizleme Başlığı ve Buton Hizalaması */
+.preview-header .close-preview-btn {
+    color: white;
+    opacity: 0.8;
+    font-size: 24px;
+    background: transparent;
+    border: none;
+}
+.preview-header .close-preview-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* --- JAZZMIN NAVBAR ARAMA KUTUSU DÜZELTMESİ --- */
+
+/* Arama kutusunun yazı rengi her zaman koyu olsun */
+.form-control-navbar {
+    color: #333333 !important;     /* Koyu gri yazı */
+    background-color: #ffffff !important; /* Beyaz arka plan */
+}
+
+/* Focus olduğunda (imleç içindeyken) */
+.form-control-navbar:focus {
+    color: #000000 !important;     /* Siyah yazı */
+    background-color: #ffffff !important;
+    border-color: #ced4da !important; /* Standart gri kenarlık */
+    box-shadow: none !important;   /* Varsa gölgeyi kaldır */
+}
+
+/* Placeholder (İpucu metni) rengi */
+.form-control-navbar::placeholder {
+    color: #6c757d !important;    /* Gri placeholder */
+    opacity: 1;
+}
+
+/* Arama butonunun rengi */
+.btn-navbar {
+    color: #333 !important;
+}
+
+/* Jazzmin Version Yazısını Gizle */
+.main-footer .float-right.d-none.d-sm-inline {
+    display: none !important;
+}
+
+/* Copyright Link Rengi */
+.main-footer strong a {
+    color: #007bff;
+    text-decoration: none;
+}
+.main-footer strong a:hover {
+    text-decoration: underline;
+}
+
+/* --- SOL MENÜ ALT KIRILIM (CHILD) RENKLENDİRME --- */
+
+/* Aktif olan alt menünün arka planını Yeşil, yazısını Beyaz yap */
+.sidebar-light-success .nav-sidebar > .nav-item > .nav-treeview > .nav-item > .nav-link.active {
+    background-color: #28a745 !important; /* Success Yeşili */
+    color: #ffffff !important;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* Hafif gölge */
+    border-radius: 4px; /* Köşeleri yumuşat */
+}
+
+/* Üzerine gelince (Hover) hafif yeşil olsun */
+.sidebar-light-success .nav-sidebar > .nav-item > .nav-treeview > .nav-item > .nav-link:hover:not(.active) {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+    color: #1e7e34 !important;
+}
+
+/* İkon rengini de beyaz yap (Aktifken) */
+.sidebar-light-success .nav-sidebar > .nav-item > .nav-treeview > .nav-item > .nav-link.active i {
+    color: #ffffff !important;
+}

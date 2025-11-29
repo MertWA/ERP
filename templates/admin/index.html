@@ -1,0 +1,257 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static dashboard_tags %}
+
+{% block content %}
+{% get_admin_dashboard_data as dash %}
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<style>
+    .dash-card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 25px;
+        overflow: hidden;
+        border: 1px solid #e9ecef;
+        height: 100%;
+    }
+    .dash-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        font-weight: bold;
+        font-size: 1.1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .dash-body { padding: 20px; }
+    
+    .log-list { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
+    .log-item {
+        padding: 12px 0;
+        border-bottom: 1px solid #f1f1f1;
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-icon {
+        width: 35px; height: 35px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        color: white;
+        margin-right: 15px;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+    .log-add { background-color: #28a745; }
+    .log-change { background-color: #ffc107; }
+    .log-delete { background-color: #dc3545; }
+    
+    .log-details { flex-grow: 1; }
+    .log-time { color: #999; font-size: 0.8rem; white-space: nowrap; margin-left: 10px;}
+
+    .alert-list-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 10px; border-radius: 5px; margin-bottom: 5px;
+        background: #f8f9fa; border-left: 4px solid #ccc;
+    }
+    .alert-critical { border-left-color: #ffc107; }
+    .alert-empty { border-left-color: #dc3545; background-color: #fff5f5; }
+    
+    .filter-btn {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        border: 1px solid #ddd;
+        color: #555;
+        text-decoration: none;
+        margin-left: 5px;
+        transition: all 0.3s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+        background-color: #343a40;
+        color: #fff;
+        border-color: #343a40;
+    }
+</style>
+
+<div class="container-fluid">
+    
+    <div class="row">
+        <div class="col-lg-8 col-md-12">
+            <div class="dash-card">
+                <div class="dash-header" style="background: linear-gradient(90deg, #1e7e34, #28a745); color: white;">
+                    <span><i class="fas fa-chart-line"></i> Aylık Teklif Hacmi (Finansal Potansiyel)</span>
+                </div>
+                <div class="dash-body">
+                    <div id="chart-financial" style="width: 100%; height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-12">
+            <div class="dash-card">
+                <div class="dash-header">
+                    <span><i class="fas fa-history"></i> İşlem Geçmişi</span>
+                    <div>
+                        <a href="?period=today" class="filter-btn {% if dash.period == 'today' %}active{% endif %}">Bugün</a>
+                        <a href="?period=week" class="filter-btn {% if dash.period == 'week' %}active{% endif %}">Hafta</a>
+                        <a href="?period=month" class="filter-btn {% if dash.period == 'month' %}active{% endif %}">Ay</a>
+                    </div>
+                </div>
+                <div class="dash-body" style="padding: 0 20px;">
+                    <ul class="log-list">
+                        {% for entry in dash.logs %}
+                        <li class="log-item">
+                            <div class="log-icon {% if entry.is_addition %}log-add{% elif entry.is_change %}log-change{% else %}log-delete{% endif %}">
+                                <i class="fas {% if entry.is_addition %}fa-plus{% elif entry.is_change %}fa-pen{% else %}fa-trash{% endif %}"></i>
+                            </div>
+                            <div class="log-details">
+                                <strong>{{ entry.user.get_full_name|default:entry.user.username }}</strong> 
+                                
+                                <span class="text-muted">
+                                    {{ entry.content_type|get_app_name }} | {{ entry.content_type }}
+                                </span> 
+                                üzerinde işlem yaptı.
+                                
+                                <div style="font-size:11px; color:#666;">{{ entry.object_repr }}</div>
+                            </div>
+                            <div class="log-time">{{ entry.action_time|date:"H:i" }}<br><small>{{ entry.action_time|date:"d M" }}</small></div>
+                        </li>
+                        {% empty %}
+                        <li class="log-item text-center text-muted">Bu periyotta işlem kaydı yok.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4 col-md-12">
+            <div class="dash-card">
+                <div class="dash-header text-danger">
+                    <span><i class="fas fa-exclamation-triangle"></i> Kritik Stoklar</span>
+                </div>
+                <div class="dash-body">
+                    <div id="chart-stock" style="width: 100%; height: 200px;"></div>
+                    <hr>
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        {% for u in dash.out_of_stock %}
+                        <div class="alert-list-item alert-empty">
+                            <strong>{{ u.ad }}</strong>
+                            <span class="badge badge-danger">TÜKENDİ (0)</span>
+                        </div>
+                        {% endfor %}
+                        {% for u in dash.critical_stock %}
+                        <div class="alert-list-item alert-critical">
+                            <strong>{{ u.ad }}</strong>
+                            <span class="badge badge-warning">Kritik: {{ u.stok_miktari }}</span>
+                        </div>
+                        {% endfor %}
+                        {% if not dash.out_of_stock and not dash.critical_stock %}
+                        <div class="text-center text-success mt-3"><i class="fas fa-check-circle fa-2x"></i><br>Stok durumu harika!</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8 col-md-12">
+            <div class="dash-card">
+                <div class="dash-header text-info">
+                    <span><i class="fas fa-tools"></i> Bekleyen & Geciken Servisler ({{ dash.service_count }})</span>
+                </div>
+                <div class="dash-body">
+                    {% if dash.urgent_services %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Fiş No</th>
+                                    <th>Müşteri</th>
+                                    <th>Konu</th>
+                                    <th>Tarih</th>
+                                    <th>Durum</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in dash.urgent_services %}
+                                <tr>
+                                    <td><a href="/admin/servis/serviskaydi/{{ s.pk }}/change/" class="font-weight-bold">{{ s.fis_no }}</a></td>
+                                    <td>{{ s.musteri }}</td>
+                                    <td>{{ s.konu|truncatechars:30 }}</td>
+                                    <td>
+                                        {% if s.planlanan_tarih.date < now.date %}
+                                            <span class="text-danger font-weight-bold">{{ s.planlanan_tarih|date:"d.m.Y" }} (Gecikti)</span>
+                                        {% else %}
+                                            <span class="text-primary">Bugün {{ s.planlanan_tarih|date:"H:i" }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><span class="badge badge-secondary">{{ s.get_durum_display }}</span></td>
+                                    <td><a href="/admin/servis/serviskaydi/{{ s.pk }}/change/" class="btn btn-sm btn-outline-info"><i class="fas fa-arrow-right"></i></a></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center p-5 text-muted">
+                        <i class="fas fa-calendar-check fa-3x mb-3" style="color:#28a745;"></i>
+                        <h4>Harika!</h4>
+                        <p>Geciken veya bugün yapılması gereken açık servis kaydı yok.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    var chartFin = echarts.init(document.getElementById('chart-financial'));
+    var finData = {{ dash.financial_chart_data|safe }};
+    var optionFin = {
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}: {c} ₺' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', data: finData.months },
+        yAxis: { type: 'value', name: 'Tutar' },
+        series: [{
+            name: 'Teklif Tutarı',
+            data: finData.totals,
+            type: 'bar',
+            barWidth: '40%',
+            itemStyle: { 
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#28a745' }, { offset: 1, color: '#155724' }]),
+                borderRadius: [5, 5, 0, 0]
+            }
+        }]
+    };
+    chartFin.setOption(optionFin);
+
+    var chartStock = echarts.init(document.getElementById('chart-stock'));
+    var stockData = {{ dash.stock_pie_data|safe }};
+    var optionStock = {
+        tooltip: { trigger: 'item' },
+        legend: { top: '0%', left: 'left', orient: 'vertical' },
+        series: [{
+            name: 'Stok Durumu',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            center: ['65%', '50%'], 
+            avoidLabelOverlap: false,
+            label: { show: false },
+            data: stockData
+        }]
+    };
+    chartStock.setOption(optionStock);
+
+    window.addEventListener('resize', function() {
+        chartFin.resize();
+        chartStock.resize();
+    });
+</script>
+{% endblock %}

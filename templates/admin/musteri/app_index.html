@@ -1,0 +1,144 @@
+{% extends "admin/app_index.html" %}
+{% load i18n %}
+{% load musteri_charts %}
+
+{% block content %}
+{% get_musteri_dashboard_data as data %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<div style="width: 100%; display: block; margin-bottom: 30px;">
+    
+    <div class="card shadow-sm" style="border:none; border-radius:8px; overflow:hidden; width: 100%;">
+        <div class="card-header text-white" style="background: linear-gradient(90deg, #17a2b8, #2c3e50); padding: 15px;">
+            <h4 class="card-title mb-0"><i class="fas fa-users"></i> Müşteri Büyüme Analizi (Aylık & Kümülatif)</h4>
+            
+            <div class="card-tools">
+                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="card-body" style="background:#fff; padding: 20px; width: 100%;">
+            <div id="musteri-chart" style="width: 100%; height: 500px; min-width: 100%;"></div>
+        </div>
+    </div>
+
+</div>
+
+<div style="width: 100%; display: block;">
+    {{ block.super }}
+</div>
+
+<script type="text/javascript">
+    var rawData = {{ data|safe }};
+    
+    // Grafiği başlat
+    var chartDom = document.getElementById('musteri-chart');
+    var myChart = echarts.init(chartDom);
+    
+    var option = {
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'cross', crossStyle: { color: '#999' } }
+        },
+        toolbox: {
+            feature: {
+                dataView: { show: true, readOnly: false, title: 'Veri' },
+                magicType: { show: true, type: ['line', 'bar'], title: {line:'Çizgi', bar:'Çubuk'} },
+                restore: { show: true, title: 'Yenile' },
+                saveAsImage: { show: true, title: 'İndir' }
+            },
+            top: 0,
+            right: 20
+        },
+        legend: {
+            data: ['Aylık Yeni Müşteri', 'Toplam Müşteri Havuzu'],
+            bottom: 0, 
+            left: 'center'
+        },
+        grid: {
+            left: '2%',
+            right: '2%',
+            bottom: '8%',
+            top: '12%',
+            containLabel: true
+        },
+        xAxis: [
+            {
+                type: 'category',
+                data: rawData.months,
+                axisPointer: { type: 'shadow' }
+            }
+        ],
+        yAxis: [
+            {
+                type: 'value',
+                name: 'Aylık Yeni',
+                min: 0,
+                position: 'left',
+                axisLine: { show: true, lineStyle: { color: '#17a2b8' } },
+                axisLabel: { formatter: '{value}' }
+            },
+            {
+                type: 'value',
+                name: 'Toplam',
+                min: 0,
+                position: 'right',
+                axisLine: { show: true, lineStyle: { color: '#2c3e50' } },
+                axisLabel: { formatter: '{value}' },
+                splitLine: { show: false }
+            }
+        ],
+        dataZoom: [
+            {
+                type: 'slider',
+                show: true,
+                start: 0,
+                end: 100,
+                bottom: 25
+            },
+            {
+                type: 'inside',
+                start: 0,
+                end: 100
+            }
+        ],
+        series: [
+            {
+                name: 'Aylık Yeni Müşteri',
+                type: 'bar',
+                itemStyle: { color: '#17a2b8', borderRadius: [5, 5, 0, 0] },
+                barWidth: '40%',
+                data: rawData.new_counts
+            },
+            {
+                name: 'Toplam Müşteri Havuzu',
+                type: 'line',
+                yAxisIndex: 1,
+                smooth: true,
+                itemStyle: { color: '#2c3e50' },
+                lineStyle: { width: 4, shadowColor: 'rgba(0,0,0,0.3)', shadowBlur: 10 },
+                symbol: 'circle',
+                symbolSize: 8,
+                data: rawData.cumulative_counts
+            }
+        ]
+    };
+
+    // Seçenekleri uygula
+    myChart.setOption(option);
+    
+    // --- KRİTİK DÜZELTME: OTOMATİK BOYUTLANDIRMA ---
+    // Sayfa tam yüklendikten ve CSS oturduktan sonra grafiği zorla yeniden boyutlandır.
+    // Bu işlem, grafiğin dar kalmasını engeller.
+    setTimeout(function() {
+        myChart.resize();
+    }, 200); // 200 milisaniye bekle ve genişlet
+
+    // Pencere boyutu değiştiğinde
+    window.addEventListener('resize', function() {
+        myChart.resize();
+    });
+</script>
+{% endblock %}

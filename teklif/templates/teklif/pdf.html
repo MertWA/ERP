@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{ p.kod }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+            @bottom-right {
+                content: "{{ L.page }} " counter(page) " {{ L.of }} " counter(pages);
+                font-family: 'Helvetica', 'Arial', sans-serif;
+                font-size: 10px;
+                color: #777;
+            }
+        }
+        body { 
+            font-family: 'Helvetica', 'Arial', sans-serif; 
+            font-size: 12px; 
+            color: #333; 
+            line-height: 1.4;
+        }
+        
+        /* --- HEADER & LOGO ALANI --- */
+        .header-table { 
+            width: 100%; 
+            margin-bottom: 25px; 
+            border-bottom: 2px solid #444; 
+            padding-bottom: 15px; 
+        }
+        
+        /* Logo Kapsayıcısı (16:3 Oranına Yakın Sabit Kutu) */
+        .logo-wrapper {
+            width: 240px;       /* Genişlik */
+            height: 60px;       /* Yükseklik */
+            line-height: 60px;  /* Dikey ortalama hilesi (text için) */
+            text-align: left;   /* Sola dayalı */
+            overflow: hidden;
+        }
+        
+        /* Logo Resmi */
+        .logo-wrapper img {
+            max-width: 100%;    /* Kutudan taşmasın */
+            max-height: 100%;   /* Kutudan taşmasın */
+            vertical-align: middle; /* Dikey ortala */
+            width: auto;
+            height: auto;
+        }
+
+        /* Logo Yoksa Çıkacak Gri Kutu */
+        .no-logo {
+            display: inline-block;
+            width: 100px;
+            height: 50px;
+            background-color: #f0f0f0;
+            color: #999;
+            text-align: center;
+            line-height: 50px;
+            border: 1px dashed #ccc;
+            font-size: 10px;
+            vertical-align: middle;
+        }
+
+        .title { 
+            text-align: right; 
+            font-size: 26px; 
+            font-weight: bold; 
+            color: #222; 
+            text-transform: uppercase; 
+            vertical-align: middle;
+        }
+        
+        /* --- BİLGİ KUTULARI (Bill To / Bill From) --- */
+        .info-table { width: 100%; margin-bottom: 30px; }
+        .info-table td { vertical-align: top; width: 33%; padding-right: 10px; }
+        
+        .box-title { 
+            font-size: 10px; 
+            color: #666; 
+            text-transform: uppercase; 
+            border-bottom: 1px solid #ddd; 
+            margin-bottom: 5px; 
+            padding-bottom: 2px;
+            font-weight: bold;
+        }
+        .box-content { font-size: 12px; }
+        .box-content strong { color: #000; font-size: 13px; }
+
+        /* Fatura Detayları (Sağ Taraf) */
+        .invoice-data-table { width: 100%; border-collapse: collapse; }
+        .invoice-data-table td { padding: 3px 0; }
+        .inv-label { font-weight: bold; color: #555; width: 60%; }
+        .inv-value { text-align: right; font-weight: bold; color: #000; }
+
+        /* --- ÜRÜN TABLOSU --- */
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; margin-top: 10px; }
+        .items-table th { 
+            background-color: #f8f9fa; 
+            color: #333; 
+            font-weight: bold; 
+            padding: 10px 8px; 
+            border-bottom: 2px solid #000; 
+            border-top: 2px solid #000;
+            text-align: left;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        .items-table td { 
+            padding: 10px 8px; 
+            border-bottom: 1px solid #eee; 
+            vertical-align: top;
+        }
+        /* Son satırın çizgisi olmasın */
+        .items-table tbody tr:last-child td { border-bottom: 2px solid #000; }
+
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .mono { font-family: 'Courier New', Courier, monospace; letter-spacing: -0.5px; }
+
+        /* --- TOPLAMLAR --- */
+        .totals-table { width: 280px; float: right; border-collapse: collapse; margin-top: 5px; }
+        .totals-table td { padding: 5px 0; }
+        .totals-label { text-align: right; padding-right: 15px; color: #555; }
+        .totals-value { text-align: right; font-weight: bold; width: 100px; }
+        .grand-total { 
+            font-size: 14px; 
+            border-top: 2px solid #000; 
+            border-bottom: 2px solid #000; 
+            padding: 8px 0; 
+            margin-top: 5px;
+            background-color: #f8f9fa;
+        }
+
+        /* --- ALT BİLGİLER (Şartlar & Banka) --- */
+        .footer-section { clear: both; margin-top: 50px; }
+        
+        .terms-box { margin-bottom: 20px; }
+        .terms-header { font-weight: bold; text-decoration: underline; margin-bottom: 8px; font-size: 12px; }
+        .terms-list { padding-left: 15px; margin: 0; font-size: 11px; color: #444; }
+        .terms-list li { margin-bottom: 4px; }
+
+        .bank-box { 
+            background-color: #f9f9f9; 
+            border: 1px solid #ddd; 
+            padding: 10px; 
+            font-size: 10px; 
+            color: #555;
+            page-break-inside: avoid; /* Bölünmesin */
+        }
+    </style>
+</head>
+<body>
+
+    <table class="header-table">
+        <tr>
+            <td width="50%">
+                <div class="logo-wrapper">
+                    {% if logo_url %}
+                        <img src="{{ logo_url }}" alt="Firma Logosu">
+                    {% else %}
+                        <div class="no-logo">LOGO YOK</div>
+                    {% endif %}
+                </div>
+            </td>
+            <td width="50%" class="title">
+                {{ L.title }}
+            </td>
+        </tr>
+    </table>
+
+    <table class="info-table">
+        <tr>
+            <td>
+                <div class="box-title">{{ L.bill_from }}</div>
+                <div class="box-content">
+                    <strong>{{ firma.firma_adi|default:"Firma Adı Girilmedi" }}</strong><br>
+                    {{ firma.adres|linebreaksbr }}<br>
+                    {% if firma.telefon %}Tel: {{ firma.telefon }}<br>{% endif %}
+                    {% if firma.eposta %}Email: {{ firma.eposta }}<br>{% endif %}
+                    {% if firma.web_site %}{{ firma.web_site }}{% endif %}
+                </div>
+            </td>
+            
+            <td>
+                <div class="box-title">{{ L.bill_to }}</div>
+                <div class="box-content">
+                    <strong>{{ p.musteri.ekstra_bilgiler.Adı|default:p.musteri }}</strong><br>
+                    {% if p.musteri.ekstra_bilgiler.Adres %}
+                        {{ p.musteri.ekstra_bilgiler.Adres }}<br>
+                    {% endif %}
+                    {% if p.musteri.ekstra_bilgiler.Telefon %}
+                        Tel: {{ p.musteri.ekstra_bilgiler.Telefon }}<br>
+                    {% endif %}
+                    {% if p.musteri.ekstra_bilgiler.Yetkili %}
+                        Sayın: {{ p.musteri.ekstra_bilgiler.Yetkili }}
+                    {% endif %}
+                </div>
+            </td>
+
+            <td>
+                <table class="invoice-data-table">
+                    <tr>
+                        <td class="inv-label">{{ L.invoice_no }}:</td>
+                        <td class="inv-value">{{ p.kod }}</td>
+                    </tr>
+                    <tr>
+                        <td class="inv-label">{{ L.date }}:</td>
+                        <td class="inv-value">{{ p.tarih|date:"d.m.Y" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="inv-label">{{ L.valid_until }}:</td>
+                        <td class="inv-value">{{ p.gecerlilik_tarihi|date:"d.m.Y"|default:"-" }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="55%">{{ L.desc }}</th>
+                <th width="10%" class="text-center">{{ L.qty }}</th>
+                <th width="15%" class="text-right">{{ L.price }}</th>
+                <th width="20%" class="text-right">{{ L.total }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in kalemler %}
+            <tr>
+                <td>
+                    <span style="font-weight:bold; font-size:12px;">{{ item.urun }}</span>
+                    {% if item.aciklama %}
+                        <br><span style="color:#666; font-size:10px;">{{ item.aciklama }}</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">{{ item.miktar }}</td>
+                <td class="text-right mono">{{ item.fiyat }}</td>
+                <td class="text-right mono"><b>{{ item.toplam }}</b></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="totals-table">
+        <tr>
+            <td class="totals-label">{{ L.subtotal }}</td>
+            <td class="totals-value">{{ ara_toplam|floatformat:2 }} {{ sembol }}</td>
+        </tr>
+        <tr>
+            <td class="totals-label">{{ L.tax }}</td>
+            <td class="totals-value">{{ toplam_kdv|floatformat:2 }} {{ sembol }}</td>
+        </tr>
+        <tr class="grand-total">
+            <td class="totals-label" style="color:#000;">{{ L.grand_total }}</td>
+            <td class="totals-value" style="font-size:16px;">{{ genel_toplam|floatformat:2 }} {{ sembol }}</td>
+        </tr>
+    </table>
+
+    <div class="footer-section">
+        
+        {% if p.notlar %} 
+        <div style="margin-bottom: 20px;">
+            <div class="terms-header" style="text-decoration:none;">NOTLAR:</div>
+            <div style="font-size:11px; color:#444;">
+                {{ p.notlar|safe }}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if sartlar %}
+        <div class="terms-box">
+            <div class="terms-header">{{ L.terms }}</div>
+            <ul class="terms-list">
+                {% for madde in sartlar %}
+                <li>{{ madde }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if firma.banka_bilgileri %}
+        <div class="bank-box">
+            <strong>Banka Hesap Bilgileri:</strong><br>
+            {{ firma.banka_bilgileri|linebreaksbr }}
+        </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>

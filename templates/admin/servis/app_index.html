@@ -1,0 +1,91 @@
+{% extends "admin/app_index.html" %}
+{% load i18n %}
+{% load servis_charts %} {% block content %}
+{% get_servis_dashboard_data as data %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<div style="width: 100%; display: block; margin-bottom: 30px;">
+    <div class="card shadow-sm" style="border:none; border-radius:8px; overflow:hidden; width: 100%;">
+        <div class="card-header text-white" style="background: linear-gradient(90deg, #343a40, #495057); padding: 15px;">
+            <h4 class="card-title mb-0"><i class="fas fa-wrench"></i> Servis & Bakım Takip Paneli</h4>
+            
+            <div class="card-tools">
+                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-minus"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="card-body" style="background:#fff; padding: 20px;">
+            <div class="row">
+                <div class="col-md-6 col-sm-12 mb-4">
+                    <div id="servis-pie" style="width: 100%; height: 350px;"></div>
+                </div>
+                <div class="col-md-6 col-sm-12 mb-4">
+                    <div id="servis-bar" style="width: 100%; height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="width: 100%; display: block;">
+    {{ block.super }}
+</div>
+
+<script type="text/javascript">
+    var rawData = {{ data|safe }};
+
+    // --- PASTA GRAFİĞİ (Bakım Durumu) ---
+    var chartPie = echarts.init(document.getElementById('servis-pie'));
+    var optionPie = {
+        title: { text: 'Bakım Durumu', left: 'center', top: 0 },
+        tooltip: { trigger: 'item', formatter: '{b}: {c} Adet ({d}%)' },
+        legend: { bottom: '0%' },
+        series: [{
+            name: 'Durum',
+            type: 'pie',
+            radius: ['40%', '70%'], // Halka
+            center: ['50%', '50%'],
+            itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 },
+            label: { show: true, formatter: '{b}: {c}' },
+            data: rawData.pie_data
+        }]
+    };
+    chartPie.setOption(optionPie);
+
+    // --- ÇUBUK GRAFİĞİ (Gelecek Yük) ---
+    var chartBar = echarts.init(document.getElementById('servis-bar'));
+    var optionBar = {
+        title: { text: 'Gelecek 6 Ayın Bakım Planı', left: 'center', top: 0 },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+        xAxis: { 
+            type: 'category', 
+            data: rawData.bar_months,
+            axisTick: { alignWithLabel: true }
+        },
+        yAxis: { type: 'value', name: 'Adet' },
+        series: [{
+            name: 'Bakım Sayısı',
+            type: 'bar',
+            barWidth: '40%',
+            data: rawData.bar_counts,
+            itemStyle: { color: '#17a2b8', borderRadius: [4, 4, 0, 0] },
+            label: { show: true, position: 'top' }
+        }]
+    };
+    chartBar.setOption(optionBar);
+
+    // --- OTOMATİK BOYUTLANDIRMA ---
+    setTimeout(function() {
+        chartPie.resize();
+        chartBar.resize();
+    }, 200);
+
+    window.addEventListener('resize', function() {
+        chartPie.resize();
+        chartBar.resize();
+    });
+</script>
+{% endblock %}
